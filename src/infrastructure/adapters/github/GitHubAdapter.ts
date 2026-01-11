@@ -5,10 +5,18 @@ import {
   CommitInfo,
   ContributorInfo,
   RawCodeData,
+  RateLimitInfo,
+  GitHubTokenInfo,
 } from '../../../application/ports/IGitHubPort';
+import {
+  GitHubTokenUtils,
+  RateLimitError,
+  AuthenticationError,
+} from './GitHubTokenUtils';
 
 export class GitHubAdapter implements IGitHubPort {
   private client: AxiosInstance;
+  private tokenUtils: GitHubTokenUtils;
 
   constructor(token?: string) {
     this.client = axios.create({
@@ -19,6 +27,29 @@ export class GitHubAdapter implements IGitHubPort {
       },
       timeout: 30000,
     });
+    this.tokenUtils = new GitHubTokenUtils(token);
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 401) {
+            throw new AuthenticationError('GitHub authentication failed. Please check your token.');
+          }
+          if (error.response?.status === 403) {
+            const rateLimitRemaining = error.response.headers['x-ratelimit-remaining'];
+            if (rateLimitRemaining === '0') {
+              const rateLimit = await this.tokenUtils.getRateLimitInfo();
+              throw new RateLimitError(rateLimit);
+            }
+            throw new AuthenticationError(
+              'GitHub API access forbidden. Token may lack required permissions.'
+            );
+          }
+        }
+        throw error;
+      }
+    );
   }
 
   async fetchRepository(owner: string, repo: string): Promise<RepositoryInfo> {
@@ -121,5 +152,17 @@ export class GitHubAdapter implements IGitHubPort {
       totalCommits,
       readme: readme || undefined,
     };
+  }
+
+  async getTokenInfo(): Promise<GitHubTokenInfo> {
+    return this.tokenUtils.getTokenInfo();
+  }
+
+  async getRateLimitInfo(): Promise<RateLimitInfo> {
+    return this.tokenUtils.getRateLimitInfo();
+  }
+
+  async checkRateLimitAvailable(minimumRemaining = 10): Promise<boolean> {
+    return this.tokenUtils.checkRateLimitAvailable(minimumRemaining);
   }
 }

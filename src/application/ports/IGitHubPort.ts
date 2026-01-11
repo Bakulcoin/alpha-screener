@@ -36,6 +36,21 @@ export interface RawCodeData {
   readme?: string;
 }
 
+export interface RateLimitInfo {
+  limit: number;
+  remaining: number;
+  reset: Date;
+  used: number;
+  resource: string;
+}
+
+export interface GitHubTokenInfo {
+  authenticated: boolean;
+  tokenType?: 'classic' | 'fine-grained';
+  scopes?: string[];
+  rateLimit: RateLimitInfo;
+}
+
 export interface IGitHubPort {
   fetchRepository(owner: string, repo: string): Promise<RepositoryInfo>;
   fetchCommits(owner: string, repo: string, limit?: number): Promise<CommitInfo[]>;
@@ -43,4 +58,7 @@ export interface IGitHubPort {
   fetchLanguages(owner: string, repo: string): Promise<Record<string, number>>;
   fetchReadme(owner: string, repo: string): Promise<string | null>;
   fetchFullCodeData(owner: string, repo: string): Promise<RawCodeData>;
+  getTokenInfo(): Promise<GitHubTokenInfo>;
+  getRateLimitInfo(): Promise<RateLimitInfo>;
+  checkRateLimitAvailable(minimumRemaining?: number): Promise<boolean>;
 }
