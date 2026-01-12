@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { loadConfig } from './config';
 import { createContainer } from './container';
 

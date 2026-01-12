@@ -33,7 +33,7 @@ export interface Container {
   ratingService: RatingService;
   outputFormatter: OutputFormatterService;
   orchestrator: AnalysisOrchestrator;
-  discordBot: DiscordBot;
+  discordBot?: DiscordBot;
 }
 
 export function createContainer(config: Config): Container {
@@ -44,10 +44,7 @@ export function createContainer(config: Config): Container {
     config.apis.messariApiKey,
     config.apis.cryptoRankApiKey
   );
-  const marketAdapter = new MarketAdapter(
-    config.apis.coinGeckoApiKey,
-    config.apis.coinMarketCapApiKey
-  );
+  const marketAdapter = new MarketAdapter(config.apis.coinMarketCapApiKey);
   const githubAdapter = new GitHubAdapter(config.apis.githubToken);
 
   const cache: ICachePort = config.redis.enabled
@@ -73,11 +70,14 @@ export function createContainer(config: Config): Container {
     cache
   );
 
-  const discordBot = new DiscordBot(
-    config.discord.botToken,
-    config.discord.clientId,
-    orchestrator
-  );
+  let discordBot: DiscordBot | undefined;
+  if (config.discord.botToken && config.discord.clientId) {
+    discordBot = new DiscordBot(
+      config.discord.botToken,
+      config.discord.clientId,
+      orchestrator
+    );
+  }
 
   return {
     aiClient,

@@ -16,7 +16,5 @@ export interface RawMarketData {
 }
 
 export interface IMarketPort {
-  fetchFromCoinGecko(identifier: string): Promise<RawMarketData | null>;
   fetchFromCoinMarketCap(identifier: string): Promise<RawMarketData | null>;
-  searchProjects(query: string): Promise<{ id: string; name: string; symbol: string }[]>;
 }

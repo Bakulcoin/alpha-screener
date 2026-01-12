@@ -1,5 +1,5 @@
 import { MarketAnalysis, ProjectNarrative } from '../../domain/entities';
-import { IMarketPort, RawMarketData } from '../ports/IMarketPort';
+import { IMarketPort } from '../ports/IMarketPort';
 import { AnthropicClient } from '../../ai/AnthropicClient';
 import { MARKET_ANALYSIS_PROMPT } from '../../ai/prompts';
 
@@ -31,12 +31,7 @@ export class MarketAnalysisService {
     projectName: string,
     narrative: ProjectNarrative
   ): Promise<MarketAnalysis> {
-    const [geckoData, cmcData] = await Promise.all([
-      this.marketPort.fetchFromCoinGecko(projectName).catch(() => null),
-      this.marketPort.fetchFromCoinMarketCap(projectName).catch(() => null),
-    ]);
-
-    const marketData = this.mergeMarketData(geckoData, cmcData);
+    const marketData = await this.marketPort.fetchFromCoinMarketCap(projectName).catch(() => null);
     const competitors = NARRATIVE_COMPETITORS[narrative] || [];
 
     const prompt = MARKET_ANALYSIS_PROMPT
@@ -55,35 +50,13 @@ export class MarketAnalysisService {
 
     return {
       ...aiAnalysis,
+      competitors: aiAnalysis.competitors.map((c) => ({
+        ...c,
+        marketCap: c.marketCap ?? undefined,
+      })),
       marketCap: marketData?.marketCap,
       volume24h: marketData?.volume24h,
       priceChange7d: marketData?.priceChange7d,
-    };
-  }
-
-  private mergeMarketData(
-    gecko: RawMarketData | null,
-    cmc: RawMarketData | null
-  ): RawMarketData | null {
-    if (!gecko && !cmc) return null;
-    if (!gecko) return cmc;
-    if (!cmc) return gecko;
-
-    return {
-      name: gecko.name,
-      symbol: gecko.symbol,
-      marketCap: gecko.marketCap || cmc.marketCap,
-      volume24h: gecko.volume24h || cmc.volume24h,
-      price: gecko.price || cmc.price,
-      priceChange24h: gecko.priceChange24h || cmc.priceChange24h,
-      priceChange7d: gecko.priceChange7d || cmc.priceChange7d,
-      priceChange30d: gecko.priceChange30d || cmc.priceChange30d,
-      circulatingSupply: gecko.circulatingSupply || cmc.circulatingSupply,
-      totalSupply: gecko.totalSupply || cmc.totalSupply,
-      maxSupply: gecko.maxSupply || cmc.maxSupply,
-      rank: gecko.rank || cmc.rank,
-      categories: [...(gecko.categories || []), ...(cmc.categories || [])],
-      lastUpdated: new Date(),
     };
   }
 }

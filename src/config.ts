@@ -5,13 +5,12 @@ const configSchema = z.object({
     apiKey: z.string().min(1),
   }),
   discord: z.object({
-    botToken: z.string().min(1),
-    clientId: z.string().min(1),
+    botToken: z.string().optional(),
+    clientId: z.string().optional(),
   }),
   apis: z.object({
     messariApiKey: z.string().optional(),
     cryptoRankApiKey: z.string().optional(),
-    coinGeckoApiKey: z.string().optional(),
     coinMarketCapApiKey: z.string().optional(),
     githubToken: z.string().optional(),
   }),
@@ -38,7 +37,6 @@ export function loadConfig(): Config {
     apis: {
       messariApiKey: process.env.MESSARI_API_KEY,
       cryptoRankApiKey: process.env.CRYPTORANK_API_KEY,
-      coinGeckoApiKey: process.env.COINGECKO_API_KEY,
       coinMarketCapApiKey: process.env.COINMARKETCAP_API_KEY,
       githubToken: process.env.GITHUB_TOKEN,
     },

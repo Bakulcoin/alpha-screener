@@ -2,53 +2,7 @@ import axios from 'axios';
 import { IMarketPort, RawMarketData } from '../../../application/ports/IMarketPort';
 
 export class MarketAdapter implements IMarketPort {
-  constructor(
-    private coinGeckoApiKey?: string,
-    private coinMarketCapApiKey?: string
-  ) {}
-
-  async fetchFromCoinGecko(identifier: string): Promise<RawMarketData | null> {
-    try {
-      const searchId = await this.searchCoinGeckoId(identifier);
-      if (!searchId) return null;
-
-      const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${searchId}`, {
-        params: {
-          localization: false,
-          tickers: false,
-          market_data: true,
-          community_data: false,
-          developer_data: false,
-        },
-        headers: this.coinGeckoApiKey
-          ? { 'x-cg-demo-api-key': this.coinGeckoApiKey }
-          : undefined,
-        timeout: 15000,
-      });
-
-      const data = response.data;
-      const marketData = data.market_data;
-
-      return {
-        name: data.name,
-        symbol: data.symbol?.toUpperCase(),
-        marketCap: marketData?.market_cap?.usd,
-        volume24h: marketData?.total_volume?.usd,
-        price: marketData?.current_price?.usd,
-        priceChange24h: marketData?.price_change_percentage_24h,
-        priceChange7d: marketData?.price_change_percentage_7d,
-        priceChange30d: marketData?.price_change_percentage_30d,
-        circulatingSupply: marketData?.circulating_supply,
-        totalSupply: marketData?.total_supply,
-        maxSupply: marketData?.max_supply,
-        rank: data.market_cap_rank,
-        categories: data.categories,
-        lastUpdated: new Date(),
-      };
-    } catch {
-      return null;
-    }
-  }
+  constructor(private coinMarketCapApiKey?: string) {}
 
   async fetchFromCoinMarketCap(identifier: string): Promise<RawMarketData | null> {
     if (!this.coinMarketCapApiKey) {
@@ -96,51 +50,6 @@ export class MarketAdapter implements IMarketPort {
         categories: (infoData.tags as string[]) || [],
         lastUpdated: new Date(),
       };
-    } catch {
-      return null;
-    }
-  }
-
-  async searchProjects(query: string): Promise<{ id: string; name: string; symbol: string }[]> {
-    try {
-      const response = await axios.get('https://api.coingecko.com/api/v3/search', {
-        params: { query },
-        headers: this.coinGeckoApiKey
-          ? { 'x-cg-demo-api-key': this.coinGeckoApiKey }
-          : undefined,
-        timeout: 10000,
-      });
-
-      return (response.data.coins || []).slice(0, 10).map((coin: Record<string, string>) => ({
-        id: coin.id,
-        name: coin.name,
-        symbol: coin.symbol?.toUpperCase(),
-      }));
-    } catch {
-      return [];
-    }
-  }
-
-  private async searchCoinGeckoId(identifier: string): Promise<string | null> {
-    try {
-      const response = await axios.get('https://api.coingecko.com/api/v3/search', {
-        params: { query: identifier },
-        headers: this.coinGeckoApiKey
-          ? { 'x-cg-demo-api-key': this.coinGeckoApiKey }
-          : undefined,
-        timeout: 10000,
-      });
-
-      const coins = response.data.coins || [];
-      if (coins.length === 0) return null;
-
-      const exactMatch = coins.find(
-        (c: { name: string; symbol: string }) =>
-          c.name.toLowerCase() === identifier.toLowerCase() ||
-          c.symbol.toLowerCase() === identifier.toLowerCase()
-      );
-
-      return exactMatch?.id || coins[0].id;
     } catch {
       return null;
     }
