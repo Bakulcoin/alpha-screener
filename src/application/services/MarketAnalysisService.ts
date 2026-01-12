@@ -47,7 +47,7 @@ export class MarketAnalysisService {
 
     const aiAnalysis = await this.aiClient.analyze<{
       problemType: 'Niche' | 'Broad';
-      competitors: Array<{ name: string; marketCap: number | null; similarity: number }>;
+      competitors: Array<{ name: string; marketCap?: number; similarity: number }>;
       differentiationClarity: number;
       marketSaturation: number;
       narrativeCycleTiming: 'Early' | 'Mid' | 'Late' | 'Post-Peak';
